@@ -32,7 +32,8 @@ def _dm_list(p, ind, g):
 #: หน้าที่มีรายชื่อผู้ป่วย (เปิดเฉพาะ LAN) → ฟังก์ชัน (p, ind, g) → dict · รายการที่ไม่รู้จักยก KeyError
 LIST_PAGES = {"ckd": ckd.patient_list, "dm": _dm_list,
               "ht": lambda p, ind, g: clinic_lists.patient_list("ht", p, ind, g),
-              "copd": lambda p, ind, g: clinic_lists.patient_list("copd", p, ind, g, grp=request.args.get("grp", "all")),
+              "copd": lambda p, ind, g: clinic_lists.patient_list("copd", p, ind, g,
+                                                                  **pages.clean_opts("copd", {"grp": request.args.get("grp")})),
               "cvd": lambda p, ind, g: clinic_lists.patient_list("cvd", p, ind, g),
               "warfarin": lambda p, ind, g: clinic_lists.patient_list("warfarin", p, ind, g)}
 
