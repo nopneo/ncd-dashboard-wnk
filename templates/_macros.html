@@ -1,0 +1,147 @@
+{# ส่วนประกอบหน้า — ทุกส่วนรับ dict จาก build() และแสดงกล่องผิดพลาดเมื่อเป็น {"error": ...} #}
+
+{% macro err(d) %}<div class="err">{{ icon('triangle-alert') }}<span>{{ d.error }}</span></div>{% endmacro %}
+
+{% macro kpi_cards(kpis) %}
+{% if kpis is mapping and kpis.error %}{{ err(kpis) }}
+{% elif kpis %}
+<section class="kpis k{{ kpis|length }}">
+  {% for k in kpis %}
+  <article class="kpi {{ k.tone or 'blue' }}">
+    <div class="kic">{{ icon(k.icon or 'users') }}</div>
+    <div class="tt">{{ k.label }}</div>
+    <div class="num">{{ k.value }}{% if k.unit %}<small>{{ k.unit }}</small>{% endif %}</div>
+    <div class="ft">
+      <span class="cap">{{ k.sub or '' }}</span>
+      {% if k.delta and k.delta.pct is not none %}
+      <span class="dl {{ k.delta.dir }}">{% if k.delta.dir == 'up' %}▲{% elif k.delta.dir == 'down' %}▼{% endif %} {{ '%+.1f'|format(k.delta.pct) }}%</span>
+      {% endif %}
+    </div>
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+{% endmacro %}
+
+{% macro bars(m, title) %}
+<section class="panel">
+  <h2 class="ph">{{ icon('activity') }}{{ title }}</h2>
+  <div class="pb">
+  {% if m is mapping and m.error %}{{ err(m) }}
+  {% else %}
+    {% set g = bar_geometry(m) %}
+    {% if m.series|length > 1 %}
+    <div class="legend">{% for s in m.series %}<span><i style="background:{{ s.color }}"></i>{{ s.name }}</span>{% endfor %}</div>
+    {% endif %}
+    <div class="bars">
+      <div class="yax">{% for t in g.ticks %}<span>{{ '{:,}'.format(t) }}</span>{% endfor %}</div>
+      <div class="plot">
+        {% for grp in g.groups %}
+        <div class="grp">
+          <div class="cols">
+            {% for b in grp.bars %}
+            <div class="col" title="{{ b.name }}: {{ b.value if b.value is not none else 'ไม่มีข้อมูล' }}">
+              <em>{{ '{:,}'.format(b.value|round|int) if b.value is not none else '' }}</em>
+              <span style="height:{{ '%.1f'|format(b.height) }}%;background:{{ b.color }}"></span>
+            </div>
+            {% endfor %}
+          </div>
+          <label>{{ grp.label }}</label>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+  </div>
+</section>
+{% endmacro %}
+
+{% macro donut(d, can_list=False) %}
+<section class="panel">
+  <h2 class="ph">{{ icon('target') }}{{ d.title if d.title else 'สัดส่วน' }}</h2>
+  <div class="pb">
+  {% if d.error %}{{ err(d) }}
+  {% else %}
+    {% set segs = donut_segments(d.parts) %}
+    <div class="donut">
+      <svg viewBox="0 0 42 42" role="img" aria-label="{{ d.title }}">
+        <circle cx="21" cy="21" r="15.9155" fill="none" stroke="var(--line)" stroke-width="6"/>
+        {% for s in segs %}
+        <circle cx="21" cy="21" r="15.9155" fill="none" stroke="{{ s.color }}" stroke-width="6"
+                stroke-dasharray="{{ s.dash }}" stroke-dashoffset="{{ s.offset }}"/>
+        {% endfor %}
+        <text x="21" y="22" text-anchor="middle" class="dc">{{ d.center }}</text>
+      </svg>
+      <ul class="dlist">
+        {% for label, value, color in d.parts %}
+        <li><i style="background:{{ color }}"></i><span>{{ label }}</span><b>{{ '{:,}'.format(value|round|int) }}</b>
+          {% if segs %}<em>{{ '%.1f'|format(segs[loop.index0].pct) }}%</em>{% endif %}
+          {% set lk = d.lists[loop.index0] if can_list and d.lists and d.lists|length > loop.index0 else none %}
+          {% if lk %}<a class="ls dl-ls" href="{{ list_url(lk.page, lk.ind, lk.g) }}">{{ icon('users') }}ดูรายชื่อ</a>{% endif %}</li>
+        {% endfor %}
+        {% if not segs %}<li class="nodata">ไม่มีข้อมูลในช่วงนี้</li>{% endif %}
+      </ul>
+    </div>
+    {% if d.total_label %}<div class="total">{{ d.total_label }}</div>{% endif %}
+  {% endif %}
+  </div>
+</section>
+{% endmacro %}
+
+{# can_list = ผู้ดูอยู่ในเครือข่าย LAN ของ รพ. → แสดงลิงก์ "ดูรายชื่อ" ของช่องที่มี c.list (ข้อมูลหน้าเก็บแคชร่วมกัน จึงตัดสินตอนแสดงผล) #}
+{% macro table(t, can_list=False) %}
+<section class="panel{{ ' wide' if t.wide }}">
+  <h2 class="ph">{{ icon('target') }}{{ t.title if t.title else 'ตาราง' }}</h2>
+  <div class="pb">
+  {% if t.error %}{{ err(t) }}
+  {% else %}
+    <table>
+      <thead><tr>{% for c in t.columns %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for row in t.rows %}
+        <tr>{% for c in row %}
+          {% if c is mapping %}<td class="{{ c.cls or '' }}">{% if c.chip %}<span class="chip {{ c.chip }}">{{ c.text }}</span>{% else %}{{ c.text }}{% endif %}{% if c.sub %}<small class="cs">{{ c.sub }}</small>{% endif %}{% if can_list and c.list %}<a class="ls" href="{{ list_url(c.list.page, c.list.ind, c.list.g) }}">{{ icon('users') }}{{ c.list.text }}</a>{% endif %}</td>
+          {% else %}<td>{{ c }}</td>{% endif %}
+        {% endfor %}</tr>
+      {% else %}<tr><td colspan="{{ t.columns|length }}" class="nodata">ไม่มีข้อมูลในช่วงนี้</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+  </div>
+</section>
+{% endmacro %}
+
+{% macro tiles(t, can_list=False) %}
+<section class="panel">
+  <h2 class="ph">{{ icon('target') }}{{ t.title }}</h2>
+  <div class="pb">
+  {% if t.error %}{{ err(t) }}{% else %}
+    <div class="tiles">
+      {% for i in t['items'] %}
+      <div class="tile {{ i.tone or 'blue' }}">
+        <div class="tl">{{ i.label }}</div>
+        <div class="tv">{{ i.value }}</div>
+        {% if i.sub %}<div class="ts">{{ i.sub }}</div>{% endif %}
+        {% if can_list and i.list %}<a class="ls" href="{{ list_url(i.list.page, i.list.ind, i.list.g) }}">{{ icon('users') }}ดูรายชื่อ</a>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+  </div>
+</section>
+{% endmacro %}
+
+{% macro notes(items) %}
+<section class="panel wide">
+  <h2 class="ph">{{ icon('lightbulb') }}ข้อสังเกตและข้อเสนอ</h2>
+  <div class="pb">
+  {% if items is mapping and items.error %}{{ err(items) }}
+  {% else %}
+    <ul class="notes">
+      {% for n in items %}<li class="{{ n.tone or 'info' }}">{{ icon('info' if (n.tone or 'info') == 'info' else 'circle-check' if n.tone == 'ok' else 'triangle-alert') }}<span>{{ n.text }}</span></li>{% endfor %}
+    </ul>
+  {% endif %}
+  </div>
+</section>
+{% endmacro %}

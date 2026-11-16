@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+{% if denied %}
+<div class="err big">{{ icon('lock') }}<span>รายชื่อผู้ป่วยเปิดดูได้เฉพาะในเครือข่ายของโรงพยาบาลเท่านั้น
+  — เปิดจากเครื่องในโรงพยาบาลด้วยที่อยู่ภายในของแดชบอร์ด (จากอินเทอร์เน็ตแสดงเฉพาะตัวเลขรวม)</span></div>
+{% else %}
+<header class="hdr">
+  <div class="hicon">{{ icon('users') }}</div>
+  <div class="htext">
+    <h1>{{ lst.title }}</h1>
+    <p>{{ p.label }} ({{ p.start.strftime('%d/%m/') ~ (p.start.year + 543) }} – {{ p.end.strftime('%d/%m/') ~ (p.end.year + 543) }}){% if lst.count is defined %} · {{ '{:,}'.format(lst.count) }} ราย{% endif %}</p>
+  </div>
+  {% if not print_mode %}
+  <a class="btn" href="{{ url_for('page', key=key) }}{{ qs(g=None) }}">{{ icon('arrow-left') }}กลับหน้า {{ nav|selectattr('key', 'equalto', key)|map(attribute='title')|first }}</a>
+  <button class="btn" type="button" data-print>{{ icon('printer') }}พิมพ์</button>
+  {% endif %}
+</header>
+<div class="audit-banner">{{ icon('lock') }}<span>ข้อมูลรายบุคคล — ใช้เพื่อติดตามดูแลผู้ป่วยภายในโรงพยาบาลเท่านั้น ห้ามถ่ายภาพหรือส่งต่อออกนอกระบบ</span></div>
+{% if lst.error %}<div class="err big">{{ icon('triangle-alert') }}<span>{{ lst.error }}</span></div>
+{% else %}
+<section class="panel wide">
+  <h2 class="ph">{{ icon('list') }}รายชื่อ{% if lst.note %}<small class="cs">{{ lst.note }}</small>{% endif %}</h2>
+  <div class="pb">
+    <table class="plist">
+      <thead><tr>{% for c in lst.columns %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for row in lst.rows %}<tr>{% for c in row %}<td>{{ c }}</td>{% endfor %}</tr>
+      {% else %}<tr><td colspan="{{ lst.columns|length }}" class="nodata">ไม่มีผู้ป่วยในกลุ่มนี้</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endif %}
+{% endblock %}

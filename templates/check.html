@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block content %}
+<header class="hdr">
+  <div class="hicon">{{ icon('circle-check') }}</div>
+  <div class="htext">
+    <h1>ตรวจก่อนใช้ (Data Audit)</h1>
+    <p>เทียบรหัสที่แอปใช้กับข้อมูลจริงของโรงพยาบาลนี้ · {{ p.label }} · แสดงเฉพาะจำนวนนับ ไม่มีข้อมูลรายคน · เปิดเฉพาะเครือข่ายภายใน</p>
+  </div>
+</header>
+
+<section class="kpis k4">
+  <article class="kpi green"><div class="kic">{{ icon('circle-check') }}</div><div class="tt">ตรงและมีข้อมูล</div><div class="num">{{ summary.ok }}</div><div class="ft"><span class="cap">รายการ</span></div></article>
+  <article class="kpi orange"><div class="kic">{{ icon('triangle-alert') }}</div><div class="tt">ควรตรวจ</div><div class="num">{{ summary.warn }}</div><div class="ft"><span class="cap">รายการ</span></div></article>
+  <article class="kpi red"><div class="kic">{{ icon('triangle-alert') }}</div><div class="tt">ไม่พบในฐาน</div><div class="num">{{ summary.error }}</div><div class="ft"><span class="cap">รายการ</span></div></article>
+</section>
+
+<section class="panel wide">
+  <h2 class="ph">{{ icon('target') }}รหัสที่แอปใช้เทียบกับที่พบในข้อมูล</h2>
+  <div class="pb">
+    <table>
+      <thead><tr><th>รายการ</th><th>แอปใช้</th><th>พบในข้อมูล</th><th>สถานะ</th><th>ตั้งค่า env</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr><td>{{ r.item }}</td><td>{{ r.app_uses }}</td><td>{{ r.found }}</td>
+          <td><span class="chip {{ {'ok': 'ok', 'warn': 'warn', 'error': 'bad'}[r.status] }}">{{ {'ok': 'ตรง', 'warn': 'ควรตรวจ', 'error': 'ไม่พบ'}[r.status] }}</span></td>
+          <td>{{ r.env_hint }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel wide">
+  <h2 class="ph">{{ icon('lightbulb') }}ขั้นตอนต่อไป</h2>
+  <div class="pb">
+    <ol class="steps">
+      <li>แก้ค่า env ของรายการที่ ✘/⚠ ให้ตรงกับรหัสของโรงพยาบาลนี้ แล้วรีสตาร์ทแอป</li>
+      <li>เทียบตัวเลขในแต่ละหน้ากับรายงานเดิมของคลินิก 1–2 สัปดาห์ (ให้พยาบาลผู้รับผิดชอบทวน)</li>
+      <li>เมื่อมั่นใจแล้ว ตั้ง <code>NCD_DATA_AUDITED=1</code> หรือกดปุ่มด้านล่าง (บันทึกในเบราว์เซอร์นี้เท่านั้น) เพื่อซ่อนแถบเตือน</li>
+    </ol>
+    <button class="btn" type="button" data-audited="{{ hospital }}">{{ icon('circle-check') }}ยืนยันว่าตรวจแล้ว (เบราว์เซอร์นี้)</button>
+  </div>
+</section>
+{% endblock %}

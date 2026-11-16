@@ -1,0 +1,204 @@
+@font-face{font-family:Kanit;font-weight:400;src:url(../fonts/Kanit-Regular.ttf)}
+@font-face{font-family:Kanit;font-weight:500;src:url(../fonts/Kanit-Medium.ttf)}
+@font-face{font-family:Kanit;font-weight:600;src:url(../fonts/Kanit-SemiBold.ttf)}
+@font-face{font-family:Kanit;font-weight:700;src:url(../fonts/Kanit-Bold.ttf)}
+@font-face{font-family:Sarabun;font-weight:400;src:url(../fonts/Sarabun-Regular.ttf)}
+@font-face{font-family:Sarabun;font-weight:500;src:url(../fonts/Sarabun-Medium.ttf)}
+@font-face{font-family:Sarabun;font-weight:600;src:url(../fonts/Sarabun-SemiBold.ttf)}
+@font-face{font-family:Sarabun;font-weight:700;src:url(../fonts/Sarabun-Bold.ttf)}
+
+/* โทนคราม–ม่วงลาเวนเดอร์ (ตามภาพตัวอย่างที่ รพ. เลือก) — สีทั้งหมดอยู่ที่ตัวแปรชุดนี้ */
+:root{
+  --navy:#25277e; --navy2:#3436b8; --blue:#4f6bff; --violet:#7a4dff; --bg:#f1f1fb; --card:#fff;
+  --text:#1e2160; --muted:#6c6f9b; --line:#e5e6f5;
+  --g-brand:linear-gradient(135deg,#4f7bff,#7a4dff);
+  --g-side:linear-gradient(180deg,#3a38c4 0%,#2d23a0 48%,#291a7e 100%);
+  --g-blue:linear-gradient(135deg,#4f8dff,#2f5ef0);
+  --g-green:linear-gradient(135deg,#34d399,#10b981);
+  --g-orange:linear-gradient(135deg,#ffab4c,#f97316);
+  --g-purple:linear-gradient(135deg,#a77bff,#7a4dff);
+  --g-teal:linear-gradient(135deg,#2dd4bf,#0ea5a0);
+  --g-red:linear-gradient(135deg,#ff6b81,#e11d48);
+  --ok:#16a34a; --warn:#f97316; --bad:#ef4444; --info:#4f6bff;
+  --sh:0 6px 20px rgba(60,55,170,.09);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg) linear-gradient(180deg,#f4f3fe 0%,#eceefa 100%) fixed;color:var(--text);font-family:'Kanit','Sarabun',sans-serif;font-size:14px;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact}
+a{color:inherit;text-decoration:none}
+.ic{width:1.15em;height:1.15em;flex:none;vertical-align:-.2em}
+
+.shell{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh}
+.shell:has(.sidebar:only-child){grid-template-columns:1fr}
+body.print .shell{grid-template-columns:1fr}
+
+/* แถบโหลดหน้าใหม่ */
+#loadbar{position:fixed;left:0;top:0;height:3px;width:100%;z-index:50;pointer-events:none;opacity:0;
+  background:linear-gradient(90deg,transparent,#8b9cff,#7a4dff,transparent);background-size:40% 100%;background-repeat:no-repeat}
+body.is-loading #loadbar{opacity:1;animation:ncd-load 1s linear infinite}
+body.is-loading main,body.is-loading .content{opacity:.55;transition:opacity .2s}
+@keyframes ncd-load{from{background-position:-40% 0}to{background-position:140% 0}}
+@media (prefers-reduced-motion:reduce){body.is-loading #loadbar{animation:none;background:#7a4dff}}
+
+/* sidebar */
+.sidebar{background:var(--g-side);color:#fff;padding:18px 14px;display:flex;flex-direction:column;gap:12px;
+  position:sticky;top:0;height:100vh;overflow:auto;box-shadow:4px 0 24px rgba(41,26,126,.18)}
+.brand{display:flex;gap:10px;align-items:center}
+.brand .logo{width:52px;height:52px;border-radius:50%;object-fit:contain;flex:none;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+.brand b{display:block;font-size:15px;line-height:1.2}
+.brand small{font-size:12px;opacity:.8}
+.src-badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:9px 11px;font-size:13px;display:grid;gap:2px}
+.src-badge .ic{margin-right:6px}
+.src-badge small{opacity:.8;font-size:12px}
+.menu{list-style:none;display:flex;flex-direction:column;gap:3px}
+.menu a{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;font-size:14px;opacity:.9;line-height:1.25}
+.menu a:hover{background:rgba(255,255,255,.1)}
+.menu li.on a{background:linear-gradient(90deg,#4f8dff,#5b6bff);opacity:1;font-weight:600;
+  box-shadow:0 6px 18px rgba(79,141,255,.45),inset 0 0 0 1px rgba(255,255,255,.25)}
+.side-note{margin-top:auto;font-size:12px;opacity:.8;display:flex;gap:8px;line-height:1.4;padding:0 4px}
+
+/* main */
+.main{padding:16px 20px 24px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.hdr{background:linear-gradient(100deg,#fff 0%,#f6f4ff 60%,#ece9ff 100%);border:1px solid #fff;border-radius:18px;box-shadow:var(--sh);
+  display:flex;align-items:center;gap:16px;padding:14px 18px;flex-wrap:wrap}
+.hicon{width:54px;height:54px;border-radius:16px;background:var(--g-brand);color:#fff;display:grid;place-items:center;flex:none;
+  box-shadow:0 8px 18px rgba(122,77,255,.35)}
+.hicon .ic{width:28px;height:28px}
+.htext{flex:1;min-width:200px}
+.htext h1{font-size:24px;color:var(--navy);line-height:1.2;font-weight:700}
+.htext p{color:var(--muted);font-size:13px;margin-top:4px;padding-left:10px;border-left:4px solid var(--violet);border-radius:2px}
+.seg{display:flex;background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px;font-size:13px;box-shadow:0 2px 8px rgba(60,55,170,.06)}
+.seg a{padding:5px 14px;border-radius:999px;color:var(--navy)}
+.seg a.on{background:var(--g-brand);color:#fff;font-weight:500;box-shadow:0 4px 12px rgba(122,77,255,.3)}
+.btn{display:inline-flex;align-items:center;gap:6px;background:var(--g-brand);color:#fff;border:0;border-radius:999px;padding:9px 18px;font:inherit;font-weight:500;cursor:pointer;
+  box-shadow:0 6px 16px rgba(122,77,255,.3)}
+.btn:hover{filter:brightness(1.06)}
+.filters{display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.filters select{font:inherit;margin-left:6px;padding:5px 12px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--navy)}
+.hint{margin-left:auto}
+
+/* KPI */
+.kpis{display:grid;gap:14px;grid-template-columns:repeat(4,minmax(0,1fr))}
+.kpis.k5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.kpis.k6{grid-template-columns:repeat(6,minmax(0,1fr))}
+/* การ์ดพาสเทล: พื้นอ่อน + ไอคอนวงกลมสีสด + ตัวเลขสีกรมท่า (สีเฉพาะการ์ดอยู่ที่ --k-bg / --k-ic / --k-ac) */
+.kpi{--k-bg:linear-gradient(135deg,#e6efff,#cfdcff);--k-ic:var(--g-blue);--k-ac:#2f5ef0;
+  color:var(--text);background:var(--k-bg);border:1px solid rgba(255,255,255,.9);border-radius:18px;padding:14px 16px;
+  display:grid;grid-template-columns:54px 1fr;gap:2px 12px;box-shadow:var(--sh);min-height:116px;position:relative;overflow:hidden}
+.kpi::after{content:"";position:absolute;right:0;top:0;width:84px;height:84px;border-radius:0 18px 0 100%;background:rgba(255,255,255,.35);pointer-events:none}
+.kpi.green{--k-bg:linear-gradient(135deg,#e2f8ee,#c6eedb);--k-ic:var(--g-green);--k-ac:#0f9f6e}
+.kpi.orange{--k-bg:linear-gradient(135deg,#fff0e1,#ffd9b3);--k-ic:var(--g-orange);--k-ac:#e8650f}
+.kpi.purple{--k-bg:linear-gradient(135deg,#f1e8ff,#ddcbff);--k-ic:var(--g-purple);--k-ac:#6d3ff0}
+.kpi.red{--k-bg:linear-gradient(135deg,#ffe8ec,#ffd0d8);--k-ic:var(--g-red);--k-ac:#d1164a}
+.kpi.teal{--k-bg:linear-gradient(135deg,#ddf7f3,#bfeee7);--k-ic:var(--g-teal);--k-ac:#0b8f8a}
+.kpi .kic{grid-row:1/3;width:54px;height:54px;border-radius:50%;background:var(--k-ic);color:#fff;display:grid;place-items:center;align-self:center;
+  box-shadow:0 6px 14px rgba(40,40,120,.18)}
+.kpi .kic .ic{width:26px;height:26px}
+.kpi .tt{font-size:14px;text-align:right;line-height:1.2;font-weight:500;color:var(--navy)}
+.kpi .num{font-size:clamp(24px,2.6vw,32px);font-weight:700;text-align:right;line-height:1.05;white-space:nowrap;color:var(--navy)}
+.kpi>*{min-width:0;position:relative;z-index:1}
+.kpi .num small{font-size:14px;font-weight:500;margin-left:4px;color:var(--muted)}
+.kpi .ft{grid-column:1/3;display:flex;justify-content:space-between;gap:6px;font-size:12px;align-items:center;color:var(--muted)}
+.kpi .dl{background:var(--k-ic);color:#fff;border-radius:999px;padding:1px 9px;white-space:nowrap;font-weight:600}
+
+/* panels */
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.panel{background:var(--card);border:1px solid #fff;border-radius:18px;box-shadow:var(--sh);overflow:hidden;min-width:0;display:flex;flex-direction:column}
+.panel.wide{grid-column:1/-1}
+/* หัวกล่อง: พื้นขาว ตัวหนังสือคราม ไอคอนในกรอบไล่สีม่วง */
+.ph{background:#fff;color:var(--navy);padding:12px 16px 10px;font-weight:600;font-size:15.5px;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--line)}
+.ph>.ic{width:30px;height:30px;padding:6px;border-radius:9px;background:var(--g-brand);color:#fff;box-shadow:0 4px 10px rgba(122,77,255,.28)}
+.pb{padding:12px 16px 14px;flex:1;overflow-x:auto}       /* ตารางกว้าง (เช่น รายชื่อ 11 คอลัมน์) เลื่อนซ้าย-ขวาได้ ไม่ถูกตัด */
+.err{display:flex;gap:8px;align-items:center;color:#991b1b;background:#fee2e2;border:1px solid #fecaca;border-radius:10px;padding:8px 12px;font-size:13px}
+.err.big{padding:14px 16px;font-size:15px}
+.nodata{color:var(--muted);text-align:center;padding:10px}
+
+/* bars */
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-bottom:6px;justify-content:flex-end}
+.legend i,.dlist i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
+.bars{display:grid;grid-template-columns:44px 1fr;height:250px;gap:6px}
+.yax{display:flex;flex-direction:column;justify-content:space-between;text-align:right;font-size:11px;color:var(--muted);padding-bottom:22px}
+.plot{display:flex;align-items:stretch;gap:4px;border-left:1px solid var(--line);border-bottom:1px solid var(--line);padding:0 4px}
+.grp{flex:1;display:flex;flex-direction:column;min-width:0}
+.cols{flex:1;display:flex;align-items:flex-end;justify-content:center;gap:2px}
+.col{flex:1;max-width:26px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.col em{font-style:normal;font-size:10px;color:var(--text);white-space:nowrap;line-height:1.2}
+.col span{width:100%;border-radius:4px 4px 0 0;min-height:0}
+.grp label{font-size:11px;color:var(--muted);text-align:center;height:22px;padding-top:4px;white-space:nowrap}
+
+/* donut */
+.donut{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.donut svg{width:190px;height:190px;flex:none}
+.dc{font-size:7px;font-weight:700;fill:var(--text);font-family:Kanit,sans-serif;dominant-baseline:middle}
+.dlist{list-style:none;flex:1;min-width:200px;display:grid;gap:8px}
+.dlist li{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center;font-size:13px}
+.dlist b{text-align:right}
+.dlist em{font-style:normal;color:var(--muted);min-width:48px;text-align:right}
+.dlist li:has(.dl-ls){grid-template-columns:auto 1fr auto auto auto} .dl-ls{margin-top:0!important;padding:0 8px 0 6px!important;font-size:12px!important}
+.tile .ls{margin-top:6px}
+.total{margin-top:10px;background:#eeebff;border-radius:12px;padding:8px 12px;text-align:center;font-weight:600;color:var(--navy)}
+
+/* table */
+table{width:100%;border-collapse:collapse;font-family:'Sarabun','Kanit',sans-serif;font-size:14px}
+th{background:linear-gradient(90deg,#3f44d6,#6a48e8);color:#fff;text-align:left;padding:7px 9px;font-weight:600}
+th:first-child{border-top-left-radius:10px} th:last-child{border-top-right-radius:10px}
+td{padding:7px 9px;border-bottom:1px solid var(--line)}
+td .cs{display:block;font-size:12px;color:var(--muted);line-height:1.35;margin-top:1px}
+td.nw{white-space:nowrap}
+/* ลิงก์ดูรายชื่อ (แสดงเฉพาะผู้ดูใน LAN ของ รพ.) */
+.ls{display:inline-flex;gap:4px;align-items:center;margin-top:4px;font-size:12.5px;font-weight:600;color:#5b33e6;
+  background:#efeaff;border-radius:999px;padding:1px 10px 1px 8px;text-decoration:none}
+.ls:hover{background:#e2d9ff}
+.ls .ic{width:14px;height:14px}
+.ph .cs{display:block;font-weight:400;font-size:12.5px;color:var(--muted);margin-top:2px}
+.plist td{white-space:nowrap} .plist td:nth-child(3){white-space:normal;min-width:160px}
+tbody tr:nth-child(even){background:#f7f6ff}
+tbody tr:hover{background:#efedff}
+.chip{display:inline-block;border-radius:999px;padding:1px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.chip.ok{background:#dcfce7;color:#166534} .chip.warn{background:#ffedd5;color:#9a3412} .chip.bad{background:#fee2e2;color:#991b1b}
+
+/* tiles / notes */
+.tiles{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+.tile{border-radius:14px;padding:11px 13px;background:linear-gradient(135deg,#eaf0ff,#dde6ff);border-left:4px solid #4f7bff}
+.tile.green{background:linear-gradient(135deg,#e5f8ef,#d2f1e2);border-left-color:#10b981}
+.tile.orange{background:linear-gradient(135deg,#fff2e4,#ffe2c4);border-left-color:#f97316}
+.tile.red{background:linear-gradient(135deg,#ffecef,#ffdbe1);border-left-color:#e11d48}
+.tile.purple{background:linear-gradient(135deg,#f3ecff,#e6d9ff);border-left-color:#7a4dff}
+.tl{font-size:12px;color:var(--muted)} .tv{font-size:22px;font-weight:700;color:var(--navy)} .ts{font-size:11px;color:var(--muted)}
+.notes{list-style:none;display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.notes li{display:flex;gap:8px;line-height:1.5;font-family:Sarabun,Kanit,sans-serif;font-size:14.5px}
+.notes li.info .ic{color:var(--info)} .notes li.ok .ic{color:var(--ok)} .notes li.warn .ic{color:var(--warn)}
+.foot{color:var(--muted);font-size:12px;text-align:center;margin-top:auto;padding-top:8px}
+
+/* banner (ใช้ใน T13) */
+.audit-banner{background:#fff7e0;border:1px solid #f5d27a;color:#7a5200;border-radius:10px;padding:8px 14px;font-size:13px;display:flex;gap:8px;align-items:center}
+
+/* การ์ด 5–6 ใบเรียงแถวเดียวจะแคบเกินจนตัวเลขล้น (แท็บเล็ต/จอเล็ก) → 3 คอลัมน์ */
+@media (max-width:1500px){.kpis.k5,.kpis.k6{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:1100px){.kpis,.kpis.k5,.kpis.k6{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:768px){
+  .shell{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto;flex-direction:column;padding:10px 12px}
+  .menu{flex-direction:row;overflow-x:auto;gap:6px}
+  .menu a{white-space:nowrap;padding:6px 10px;background:rgba(255,255,255,.08)}
+  .side-note,.src-badge small{display:none}
+  .main{padding:12px 16px 20px}
+  .kpis,.kpis.k5,.kpis.k6{grid-template-columns:1fr 1fr}
+  .kpi .num{font-size:26px}
+  .bars{height:210px}
+}
+@media print{
+  .sidebar,.filters,.btn,.seg,.audit-banner,.ls{display:none!important}
+  .shell{display:block}
+  body{background:#fff}
+  .main{padding:0}
+  .panel,.kpi,.hdr{box-shadow:none;break-inside:avoid}
+}
+
+.audit-banner[hidden]{display:none}.audit-banner a{text-decoration:underline;font-weight:600}
+.steps{padding-left:20px;display:grid;gap:6px;margin-bottom:12px;font-family:Sarabun,Kanit,sans-serif}
+code{background:#efedff;border-radius:4px;padding:0 4px}
+.side-link{display:flex;gap:8px;align-items:center;font-size:13px;opacity:.85;padding:6px 10px;border-radius:10px;border:1px dashed rgba(255,255,255,.3)}
+.side-link:hover{background:rgba(255,255,255,.1)}
+@media (max-width:768px){.side-link{display:none}}

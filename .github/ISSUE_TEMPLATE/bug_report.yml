@@ -1,0 +1,43 @@
+name: แจ้งปัญหา / ตัวเลขไม่ตรง
+description: แจ้งปัญหาของ NCD Dashboard (ต้องแนบผล setup_check.py และห้ามมีข้อมูลผู้ป่วย)
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ก่อนแจ้ง: อ่าน INSTALL.md ข้อ 0 และเปิดหน้า `/check` — ตัวเลขที่ไม่ตรงส่วนใหญ่มาจากรหัสใน HOSxP ของ รพ. ไม่ตรงกับค่าเริ่มต้น
+        **ห้ามแนบข้อมูลผู้ป่วย** (HN, CID, ชื่อ, ภาพหน้าจอที่มีข้อมูลรายคน)
+  - type: textarea
+    id: setup_check
+    attributes:
+      label: ผล `python setup_check.py` (คัดลอกทั้งหมด)
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: เวอร์ชันของแอป (ท้ายหน้าเว็บ) และ HOSxP
+    validations:
+      required: true
+  - type: dropdown
+    id: page
+    attributes:
+      label: หน้าที่มีปัญหา
+      options: [ภาพรวม, HT, DM, CKD, Warfarin, "COPD/หืด", CVD, "/check", อื่น ๆ]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: ปัญหาที่พบ
+      description: ตัวเลขที่แสดง เทียบกับตัวเลขที่คาดว่าถูก (เป็นตัวเลขรวมเท่านั้น) และวิธีที่ใช้เทียบ
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: ยืนยัน
+      options:
+        - label: ข้อความและไฟล์ที่แนบทั้งหมด **ไม่มีข้อมูลผู้ป่วย** (HN, CID, ชื่อ, ที่อยู่)
+          required: true

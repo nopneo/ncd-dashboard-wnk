@@ -1,0 +1,20 @@
+.env
+data/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.claude/
+# เครื่องมือ deploy/พัฒนาเฉพาะระบบภายใน รพ.วังน้ำเขียว (มี IP/บัญชี/โครงสร้างเซิร์ฟเวอร์) — ไม่เผยแพร่
+deploy_ncd.py
+deploy_notes.md
+dev_server.py
+# บันทึกระหว่างพัฒนา (มีข้อมูลระบบภายใน)
+docs/superpowers/
+# สำรอง script จากฐาน HOSxP จริง
+hosxp_alert/backups/
+# คลิปแนะนำ: ไฟล์ใหญ่ + ภาพที่ถ่ายจากระบบจริง
+video/
+# ไฟล์ที่ไม่ใช่ของโครงการ / ลิขสิทธิ์ผู้อื่น
+*.pdf
+S__*.jpg

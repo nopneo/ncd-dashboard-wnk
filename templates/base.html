@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ data.title }} · NCD Dashboard</title>
+  <link rel="icon" href="{{ url_for('static', filename='img/logo.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v={{ version }}">
+</head>
+<body class="{{ 'print' if print_mode else '' }}">
+<div id="loadbar" aria-hidden="true"></div>
+<div class="shell">
+  {% if not print_mode %}
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="" class="logo">
+      <div><b>{{ hospital }}</b><small>NCD Dashboard</small></div>
+    </div>
+    <div class="src-badge">{{ icon('database') }}<span>ข้อมูลจาก {{ 'HDC (ทั้งอำเภอ)' if src == 'hdc' else 'HOSxP (รพ.)' }}</span>
+      <small>{{ p.label }}</small></div>
+    <nav>
+      <ul class="menu">
+        {% for n in nav %}
+        <li class="{{ 'on' if n.key == key else '' }}">
+          <a href="{{ url_for('page', key=n.key) if n.key != 'overview' else url_for('page') }}{{ qs() }}">{{ icon(n.icon) }}<span>{{ n.title }}</span></a>
+        </li>
+        {% endfor %}
+      </ul>
+    </nav>
+    {% if key != 'check' %}<a class="side-link" href="{{ url_for('check_page') }}">{{ icon('circle-check') }}<span>ตรวจก่อนใช้ (Data Audit)</span></a>{% endif %}
+    <div class="side-note">{{ icon('hospital') }}<span>จากอินเทอร์เน็ตแสดงเฉพาะตัวเลขรวม · รายชื่อผู้ป่วยเปิดได้เฉพาะในเครือข่าย LAN ของโรงพยาบาล</span></div>
+  </aside>
+  {% endif %}
+  <main class="main">
+    {% if not print_mode and not audited %}
+    <div class="audit-banner" id="audit-banner" data-hospital="{{ hospital }}">{{ icon('triangle-alert') }}<span>ตัวเลขยังไม่ได้ตรวจกับข้อมูลของโรงพยาบาลนี้ — <a href="{{ url_for('check_page') }}">ตรวจที่หน้า /check</a> และเทียบกับรายงานเดิมก่อนนำไปใช้</span></div>
+    {% endif %}
+    {% block content %}{% endblock %}
+    <footer class="foot">NCD Dashboard v{{ version }} · {{ hospital }} · ข้อมูล ณ {{ as_of }}</footer>
+  </main>
+</div>
+<script src="{{ url_for('static', filename='js/app.js') }}?v={{ version }}"></script>
+</body>
+</html>

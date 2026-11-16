@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block content %}
+<header class="hdr">
+  <div class="hicon">{{ icon(nav|selectattr('key', 'equalto', key)|map(attribute='icon')|first) }}</div>
+  <div class="htext">
+    <h1>{{ data.title }}</h1>
+    <p>{{ data.subtitle or '' }}{% if data.subtitle %} · {% endif %}{{ p.label }} ({{ p.start.strftime('%d/%m/') ~ (p.start.year + 543) }} – {{ p.end.strftime('%d/%m/') ~ (p.end.year + 543) }})</p>
+  </div>
+  {% if not print_mode %}
+  <div class="seg" role="group" aria-label="แหล่งข้อมูล">
+    <a class="{{ 'on' if src == 'hosxp' else '' }}" href="{{ qs(src='hosxp') }}">HOSxP (รพ.)</a>
+    <a class="{{ 'on' if src == 'hdc' else '' }}" href="{{ qs(src='hdc') }}">HDC (ทั้งอำเภอ)</a>
+  </div>
+  <button class="btn" type="button" data-print>{{ icon('printer') }}พิมพ์ / PDF</button>
+  {% endif %}
+</header>
+
+{% if not print_mode %}
+<form class="filters" method="get">
+  {% if src != 'hosxp' %}<input type="hidden" name="src" value="{{ src }}">{% endif %}
+  <label>ปีงบประมาณ
+    <select name="fy" data-autosubmit>{% for y in fy_options %}<option value="{{ y }}" {{ 'selected' if y == p.fy else '' }}>{{ y }}</option>{% endfor %}</select>
+  </label>
+  <label>ช่วงข้อมูล
+    <select name="scope" data-autosubmit>{% for v, t in scope_options %}<option value="{{ v }}" {{ 'selected' if v == p.scope else '' }}>{{ t }}</option>{% endfor %}</select>
+  </label>
+  <span class="hint">▲▼ บนการ์ด = เทียบกับ{{ 'ช่วงเดียวกันของปีงบ ' ~ (p.fy - 1) }}</span>
+</form>
+{% endif %}
+
+{% if data.partial_notice %}<div class="audit-banner">{{ icon('info') }}<span>{{ data.partial_notice }}</span></div>{% endif %}
+
+{% if data.page_error %}<div class="err big">{{ icon('triangle-alert') }}<span>{{ data.page_error }}</span></div>{% endif %}
+
+{{ m.kpi_cards(data.kpis) if data.kpis is defined }}
+
+{% if data.monthly is defined or data.donut is defined or data.table is defined or data.recent is defined or data.extra %}
+<div class="grid">
+  {% if data.monthly is defined %}{{ m.bars(data.monthly, data.monthly_title or 'แนวโน้มรายเดือน') }}{% endif %}
+  {% if data.donut is defined %}{{ m.donut(data.donut, can_list) }}{% endif %}
+  {% if data.table is defined %}{{ m.table(data.table, can_list) }}{% endif %}
+  {% if data.recent is defined %}{{ m.table(data.recent) }}{% endif %}
+  {% for x in data.extra or [] %}
+    {% if x.type == 'tiles' %}{{ m.tiles(x, can_list) }}{% else %}{{ m.table(x, can_list) }}{% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if data.notes is defined %}{{ m.notes(data.notes) }}{% endif %}
+{% endblock %}
