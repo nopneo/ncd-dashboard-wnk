@@ -78,10 +78,13 @@ def parse(args: Mapping[str, str], today: date) -> Period:
     """อ่าน fy/scope จาก query string — ค่าผิดรูปแบบใช้ค่าเริ่มต้น (ปีงบปัจจุบัน ทั้งปี)"""
     cur = fiscal_year(today)
     raw = str(args.get("fy", "") or "")
-    fy = int(raw) if raw.isdigit() and 2500 <= int(raw) <= cur else cur       # ไม่รับปีงบอนาคต
+    # isascii: str.isdigit() รับเลขยก/เลขไทย (เช่น "²") แต่ int() แปลงไม่ได้ → 500
+    fy = int(raw) if raw.isascii() and raw.isdigit() and 2500 <= int(raw) <= cur else cur       # ไม่รับปีงบอนาคต
     scope = str(args.get("scope", "year") or "year")
-    if not _valid_scope(scope):
+    if not (scope.isascii() and _valid_scope(scope)):
         scope = "year"
+    elif scope.startswith("m"):
+        scope = f"m{int(scope[1:])}"        # m01 / m001 = m1 — ช่วงเดียวกันใช้คีย์แคชเดียว
     return make(fy, scope)
 
 

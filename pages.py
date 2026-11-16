@@ -92,8 +92,19 @@ def _neutral(v):
     return out
 
 
+#: ตัวเลือกที่หน้าแต่ละหน้าอ่านจริง → ค่าที่รับได้ (นอกนั้นตัดทิ้งก่อนทำคีย์แคช)
+#: เดิมคีย์แคชรวม query string ทุกตัว → ?x=1, ?x=2 … ทำให้แคชพลาดทุกครั้ง ยิงฐานซ้ำ ไล่หน้าที่อุ่นไว้ออก และ _locks โตไม่หยุด
+PAGE_OPTS = {"copd": {"grp": ("copd", "asthma")}}      # grp=all = ค่าเริ่มต้น (ไม่ใส่ในคีย์)
+
+
+def clean_opts(key, opts) -> dict:
+    """เหลือเฉพาะตัวเลือกที่หน้านี้ใช้และค่าถูกต้อง — ทำให้คีย์แคชมีจำนวนจำกัด"""
+    allowed = PAGE_OPTS.get(key, {})
+    return {k: v for k, v in (opts or {}).items() if k in allowed and v in allowed[k]}
+
+
 def _cache_key(key, p, src, opts):
-    return (key, p.fy, p.scope, src, tuple(sorted((k, v) for k, v in opts.items() if k not in ("fy", "scope", "src", "print"))))
+    return (key, p.fy, p.scope, src, tuple(sorted(opts.items())))
 
 
 def _lock_for(ck):
@@ -140,7 +151,7 @@ def _refresh_async(ck, key, p, src, opts):
 def get(key: str, p, src: str = "hosxp", opts=None) -> dict:
     """ข้อมูลของหน้า key (แคชแล้ว) — ล้มเหลวคืน {"title", "page_error"} ไม่ throw
     สด → คืนทันที · หมดอายุแต่ยังไม่เกิน STALE_MAX → คืนของเดิมทันทีแล้วรีเฟรชเบื้องหลัง · ไม่มี/เก่าเกิน → สร้างก่อนตอบ (คำขอซ้ำรอผลเดียวกัน)"""
-    opts = dict(opts or {})
+    opts = clean_opts(key, opts)
     ck = _cache_key(key, p, src, opts)
     cached = PAGE_CACHE.get(ck, CACHE_TTL)
     if cached is not None:
