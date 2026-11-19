@@ -28,6 +28,47 @@ production: `gunicorn -w 1 --threads 8 -t 180 -b 0.0.0.0:5400 app:app` (Linux) �
 
 **บัญชีฐานข้อมูล:** สร้างบัญชี MariaDB อ่านอย่างเดียว (`GRANT SELECT ON hos.* TO ...`) เฉพาะแอปนี้ แอปตั้ง session เป็น READ ONLY ให้อีกชั้นหนึ่ง แต่ `setup_check.py` จะแจ้ง ✘ ถ้าบัญชีมีสิทธิ์เขียน
 
+### 1.1 ทางเข้าภายใน รพ. (โดเมนย่อยที่ชี้ IP ภายใน — ทางเดียวที่เปิดรายชื่อผู้ป่วยได้เมื่อมี Cloudflare)
+
+ทางสาธารณะ (เช่น `https://<โดเมน รพ.>/ncd/` ผ่าน Cloudflare) ให้คนนอกเห็นเฉพาะตัวเลขรวม · หน้ารายชื่อและ `/check` ตอบ 403 เสมอ เพราะแอปต้องการให้ **ทุก** IP ในคำขอเป็น IP ภายใน และคำขอผ่าน Cloudflare มี IP สาธารณะของผู้ใช้ติดมาด้วย (แม้มาจากใน รพ.) · ทางเข้าภายในเป็นโดเมนย่อยอีกชื่อที่ DNS ชี้ไป **IP ภายใน** ของเครื่องแอป
+เบราว์เซอร์ในโรงพยาบาลจึงต่อตรงถึงเครื่องแอป ไม่ผ่าน Cloudflare/อินเทอร์เน็ต — Apache ส่ง IP จริงของเครื่องเจ้าหน้าที่ (`192.168.x.x`) ต่อให้แอป
+แอปนับเป็นเครื่องใน รพ. เอง (ลิงก์ “ดูรายชื่อ” และหน้า `/check` เปิดได้) และจากอินเทอร์เน็ตเปิดไม่ได้เพราะ IP ภายในใช้จากข้างนอกไม่ได้ — ใช้จากนอก รพ. ให้ต่อ VPN ของ รพ. (ห้ามเพิ่ม IP บ้าน)
+
+**ตัวอย่าง รพ.วังน้ำเขียว:** `https://lan.wnkhos.go.th/ncd/` (DNS → `192.168.11.40`) · หน้าแรก `https://lan.wnkhos.go.th/` มีลิงก์ระบบภายในทุกตัว
+
+1. **DNS:** เพิ่ม A record เช่น `lan` → IP ภายในของเครื่องแอป · ใน Cloudflare ต้องเป็น **DNS only (เมฆสีเทา)** — เปิด proxy (เมฆสีส้ม) แล้วใช้ไม่ได้
+   (resolver/เราเตอร์บางรุ่นมี DNS rebinding protection ที่ไม่ตอบ IP ภายใน — ทดสอบจากเครื่องใน รพ. ทั้ง DNS ของ ISP และ 8.8.8.8)
+2. **ใบรับรอง:** Let's Encrypt แบบ HTTP-01 ออกให้ไม่ได้ (ข้างนอกเข้าถึง IP ภายในไม่ได้) — ใช้ DNS-01 ผ่าน Cloudflare (ฟรี ต่ออายุอัตโนมัติ):
+   ```bash
+   dnf install certbot python3-certbot-dns-cloudflare        # หรือ apt install python3-certbot-dns-cloudflare
+   # /root/.secrets/cloudflare.ini (chmod 600): dns_cloudflare_api_token = <token สิทธิ์ Zone:DNS:Edit เฉพาะโดเมนนี้>
+   certbot certonly --dns-cloudflare --dns-cloudflare-credentials /root/.secrets/cloudflare.ini -d lan.<โดเมน รพ.>
+   ```
+3. **Apache:** vhost แยก (เช่น `/etc/httpd/conf.d/zz-lan-443.conf`) จำกัดให้เฉพาะ IP ภายใน แล้วส่งต่อแบบเดียวกับทางสาธารณะ
+   (ใช้ vhost เดียวรวมทุกแอปภายในได้ — เพิ่ม `ProxyPass` ของแต่ละแอปต่อกัน):
+   ```apache
+   <VirtualHost *:443>
+       ServerName lan.<โดเมน รพ.>
+       SSLEngine on
+       SSLCertificateFile    /etc/letsencrypt/live/lan.<โดเมน รพ.>/fullchain.pem
+       SSLCertificateKeyFile /etc/letsencrypt/live/lan.<โดเมน รพ.>/privkey.pem
+       <Location />
+           Require ip 192.168.0.0/16 10.0.0.0/8 172.16.0.0/12 127.0.0.1
+       </Location>
+       ProxyPreserveHost On
+       RequestHeader set X-Forwarded-Proto "https"
+       ProxyPass        /ncd/ http://127.0.0.1:5400/
+       ProxyPassReverse /ncd/ http://127.0.0.1:5400/
+       <Location /ncd/>
+           RequestHeader set X-Forwarded-Prefix "/ncd"
+       </Location>
+       RedirectMatch ^/ncd$ /ncd/
+   </VirtualHost>
+   ```
+   `httpd -t` ผ่านแล้วค่อย `systemctl reload httpd`
+4. **`.env`:** ไม่ต้องตั้งอะไรเพิ่ม — แอปตัดสินจาก IP ภายในของเครื่องเอง (ไม่มีตัวแปร LAN ให้ใส่ IP บ้าน)
+5. **ทดสอบ:** จากเครื่องใน รพ. เปิด `https://lan.<โดเมน รพ.>/ncd/ht` แล้วต้องเห็นลิงก์ดูรายชื่อ และเปิดรายชื่อได้ · จากมือถือที่ใช้เน็ตมือถือ (ปิด Wi-Fi/VPN) ต้องเปิดไม่ได้
+
 ## 2. หน้าและแหล่งข้อมูล
 | หน้า | ทะเบียน/นิยามผู้ป่วย | ตัวชี้วัดหลัก |
 |---|---|---|
