@@ -18,12 +18,31 @@ import ui
 from queries import common
 
 
+#: IP ภายในมาตรฐาน — ระบุเอง ไม่ใช้ ip.is_private เพราะนับช่วงสาธารณะบางช่วงเป็น private ด้วย
+#: (เช่น 203.0.113.0/24, 198.18.0.0/15, 100.64.0.0/10 บางรุ่นของ Python)
+_LAN_NETS = [ipaddress.ip_network(n) for n in
+             ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "::1/128", "fc00::/7")]
+
+
 def is_lan(addr: str) -> bool:
     try:
         ip = ipaddress.ip_address((addr or "").strip())
     except ValueError:
         return False
-    return ip.is_private or ip.is_loopback
+    if getattr(ip, "ipv4_mapped", None):
+        ip = ip.ipv4_mapped
+    return any(ip in n for n in _LAN_NETS)
+
+
+def host_allowed(host: str) -> bool:
+    """NCD_ALLOWED_HOSTS (คั่นด้วย ,) = ชื่อโดเมนที่เปิดหน้ารายชื่อ / /check ได้ เช่น lan.wnkhos.go.th
+    กันเว็บอื่นใช้ DNS rebinding ให้เบราว์เซอร์ของเจ้าหน้าที่ดึงรายชื่อออกไป · ว่าง = ไม่ตรวจ"""
+    allowed = {h.strip().lower() for h in os.getenv("NCD_ALLOWED_HOSTS", "").split(",") if h.strip()}
+    if not allowed:
+        return True
+    h = (host or "").lower()
+    h = h.split("]")[0] + "]" if h.startswith("[") else h.rsplit(":", 1)[0]
+    return h in allowed
 
 
 def request_allowed(remote_addr: str, headers) -> bool:

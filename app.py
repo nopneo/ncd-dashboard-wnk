@@ -1,12 +1,14 @@
 """NCD Dashboard — แดชบอร์ดกลุ่มโรคไม่ติดต่อเรื้อรัง (HT DM CKD Warfarin COPD/หืด CVD)
 
 รันเอง:      python app.py            → http://127.0.0.1:5400/
-production:  gunicorn -b 0.0.0.0:5400 app:app   (ออกผ่าน sub-path ด้วย X-Forwarded-Prefix)
+production:  gunicorn -b 127.0.0.1:<PORT> app:app หลัง Apache (sub-path ด้วย X-Forwarded-Prefix) — ห้ามเปิด 0.0.0.0
 """
+import copy
 import mimetypes
 import logging
 import os
 import re
+import threading
 from datetime import date
 from urllib.parse import urlencode
 
@@ -41,8 +43,33 @@ LIST_PAGES = {"ckd": ckd.patient_list, "dm": _dm_list,
 mimetypes.add_type("text/css", ".css")
 mimetypes.add_type("text/javascript", ".js")
 
-VERSION = "0.1.10"
+VERSION = "0.1.11"
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+#: reverse proxy ที่เชื่อ X-Forwarded-Prefix / X-Forwarded-Proto ได้ (Apache บนเครื่องเดียวกัน)
+TRUSTED_PROXIES = {x.strip() for x in os.getenv("NCD_TRUSTED_PROXIES", "127.0.0.1,::1").split(",") if x.strip()}
+#: คนนอก รพ. เห็นจำนวนเสียชีวิต 1..MIN_CELL-1 เป็น "<MIN_CELL" · 0 = ปิด
+MIN_CELL = max(int(os.getenv("NCD_PUBLIC_MIN_CELL", "5") or 0), 0)
+
+
+def public_view(data):
+    """สำเนาข้อมูลหน้า (ต้นฉบับอยู่ในแคชที่ใช้ร่วมกับเครื่องใน รพ. — ห้ามแก้) ที่ซ่อนช่องที่มี privacy_n 1..MIN_CELL-1
+    ใช้กับจำนวนเสียชีวิตจาก HOSxP (CKD/CVD) ซึ่งเลือกดูรายเดือนได้ — ย้อนหาได้ว่าใครเสียชีวิตด้วยโรคอะไร"""
+    if not MIN_CELL:
+        return data
+
+    def walk(v):
+        if isinstance(v, dict):
+            n = v.get("privacy_n")
+            out = {k: walk(x) for k, x in v.items() if k != "privacy_n"}
+            if isinstance(n, int) and 0 < n < MIN_CELL:
+                out["value"] = f"<{MIN_CELL}"
+            return out
+        if isinstance(v, list):
+            return [walk(x) for x in v]
+        return v
+    return walk(data)
 
 
 class PrefixMiddleware:
@@ -56,14 +83,18 @@ class PrefixMiddleware:
         self.wsgi_app = wsgi_app
 
     def __call__(self, environ, start_response):
-        prefix = environ.get("HTTP_X_FORWARDED_PREFIX", "")
+        # เชื่อ header จาก reverse proxy บนเครื่องเดียวกันเท่านั้น — เครื่องอื่นส่ง prefix ปลอมมาแก้ลิงก์ในหน้าไม่ได้
+        trusted = environ.get("REMOTE_ADDR", "") in TRUSTED_PROXIES
+        prefix = environ.get("HTTP_X_FORWARDED_PREFIX", "") if trusted else ""
+        if prefix and (not prefix.startswith("/") or any(c in prefix for c in '"<>\'\\ ') or prefix.startswith("//")):
+            prefix = ""
         if prefix:
             environ["SCRIPT_NAME"] = prefix.rstrip("/")
             path = environ.get("PATH_INFO", "")
             if path.startswith(prefix):
                 environ["PATH_INFO"] = path[len(prefix):] or "/"
-        proto = environ.get("HTTP_X_FORWARDED_PROTO")
-        if proto:
+        proto = environ.get("HTTP_X_FORWARDED_PROTO") if trusted else None
+        if proto in ("http", "https"):
             environ["wsgi.url_scheme"] = proto
         return self.wsgi_app(environ, start_response)
 
@@ -170,16 +201,26 @@ def _ctx(key, p, src, data):
 @app.route("/<key>")
 def page(key):
     data, p, src = _build(key)
-    return render_template("page.html", **_ctx(key, p, src, data))
+    return render_template("page.html", **_ctx(key, p, src, data if _on_lan() else public_view(data)))
+
+
+_check_lock = threading.Lock()
 
 
 @app.route("/check")
 def check_page():
     """Data Audit — เปิดเฉพาะ LAN (หลัง proxy ตรวจ X-Forwarded-For ด้วย)"""
-    if not _on_lan():
+    if not _on_lan() or not check.host_allowed(request.host):
         abort(403)
     p = periods.parse(request.args, _today())
-    rows = check.audit(p)
+    # ยิงฐาน ~67 คำสั่งต่อครั้ง — ให้ตรวจได้ทีละครั้ง คนที่ 2 ได้ "ไม่ว่าง" ทันที ไม่ซ้อนภาระบนฐาน HOSxP
+    if not _check_lock.acquire(blocking=False):
+        return ("กำลังตรวจข้อมูลของผู้ใช้อื่นอยู่ ลองใหม่ในอีกครู่", 503,
+                {"Retry-After": "30", "Content-Type": "text/plain; charset=utf-8"})
+    try:
+        rows = check.audit(p)
+    finally:
+        _check_lock.release()
     return render_template("check.html", rows=rows, summary=check.summary(rows),
                            **_ctx("check", p, "hosxp", {"title": "ตรวจก่อนใช้ (Data Audit)"}))
 
@@ -188,7 +229,7 @@ def check_page():
 def patient_list(key, ind):
     """รายชื่อผู้ป่วยจากตัวชี้วัด — เปิดเฉพาะเครือข่าย LAN ของ รพ. (จากอินเทอร์เน็ต/Cloudflare ได้ 403 โดยไม่แตะฐาน)"""
     p = periods.parse(request.args, _today())
-    if not _on_lan():
+    if not _on_lan() or not check.host_allowed(request.host):
         resp = make_response(render_template("list.html", denied=True,
                                              **_ctx(key, p, "hosxp", {"title": "ดูรายชื่อได้เฉพาะในเครือข่ายโรงพยาบาล"})), 403)
     else:
@@ -212,7 +253,7 @@ def patient_list(key, ind):
 @app.route("/api/<key>.json")
 def api(key):
     data, _p, _src = _build(key)
-    return jsonify(data)
+    return jsonify(data if _on_lan() else public_view(data))
 
 
 @app.route("/healthz")

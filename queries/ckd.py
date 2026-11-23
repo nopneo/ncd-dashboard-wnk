@@ -332,7 +332,7 @@ def _indicators(core, sd=None):
     if sd and "error" not in sd:
         extra = [{"label": f"Admit ซ้ำ ≤{config.READMIT_DAYS} วัน", "value": ui.fmt_int(sd["readmits"]),
                   "sub": "ครั้ง (นับจากวันจำหน่ายครั้งก่อน)", "tone": "orange"},
-                 {"label": "เสียชีวิตขณะ Admit (มีรหัส CKD)", "value": ui.fmt_int(sd["deaths"]),
+                 {"label": "เสียชีวิตขณะ Admit (มีรหัส CKD)", "value": ui.fmt_int(sd["deaths"]), "privacy_n": sd["deaths"],
                   "sub": "ครั้ง (สถานะจำหน่าย " + ",".join(config.DCHSTTS_DEAD) + ")", "tone": "red"}]
     return {"type": "tiles", "title": "ตัวชี้วัดสำคัญคลินิก CKD", "items": [
         {"label": "Admit ด้วย CKD", "value": ui.fmt_int(core["admits"]), "sub": "ครั้ง (รหัส " + ",".join(config.ICD_CKD) + ")", "tone": "red"}] + extra + [
