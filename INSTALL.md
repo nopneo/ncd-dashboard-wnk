@@ -22,7 +22,7 @@ cp .env.example .env        # แล้วกรอกค่าฐานข้�
 python setup_check.py
 python app.py               # http://127.0.0.1:5400/
 ```
-production: `gunicorn -w 1 --threads 8 -t 180 -b 0.0.0.0:5400 app:app` (Linux) หรือ `waitress-serve --threads=4 --port=5400 app:app` (Windows)
+production: `gunicorn -w 1 --threads 8 -t 180 -b 127.0.0.1:5400 app:app` (Linux — ฟังเฉพาะ 127.0.0.1 หลัง Apache **ห้าม `0.0.0.0`**: เครื่องใน LAN จะต่อพอร์ตตรงโดยไม่ผ่าน Apache · systemd ให้รันด้วยผู้ใช้ของแอปเอง ไม่ใช่ root) หรือ `waitress-serve --threads=4 --port=5400 app:app` (Windows)
 **ต้องตั้ง `-t 180` (timeout)** — การเปิดหน้าครั้งแรกที่ยังไม่มีแคชดึง HOSxP หลายสิบ query ใช้เวลาหลายวินาทีถึงเกือบครึ่งนาที (ภาพรวมใช้นานที่สุด) ค่า timeout เริ่มต้นของ gunicorn (30 วินาที) อาจฆ่า worker แล้วหน้าไม่ขึ้น · แคชเก็บในหน่วยความจำต่อโปรเซส จึงใช้ **`-w 1` + หลาย thread** (แคชและตัวอุ่นแคชชุดเดียว) · เมื่อเริ่มระบบจะอุ่นแคชหน้าเริ่มต้น (ปีงบปัจจุบัน+ปีก่อน ทุกโรค) แล้วรีเฟรชทุก 10 นาที · แคชหมดอายุแล้วระบบส่งข้อมูลเดิมทันทีและรีเฟรชเบื้องหลัง สลับโรคจึงไม่ต้องรอ
 ออกผ่าน reverse proxy แบบ sub-path ได้ — แอปอ่าน `X-Forwarded-Prefix` / `X-Forwarded-Proto` เอง (ดู `deploy_notes.md`)
 
@@ -101,6 +101,9 @@ production: `gunicorn -w 1 --threads 8 -t 180 -b 0.0.0.0:5400 app:app` (Linux) �
 | `NCD_WARM` / `NCD_WARM_INTERVAL` | `1` / `600` | อุ่นแคชหน้าเริ่มต้นตอนเริ่มระบบและรีเฟรชทุกกี่วินาที (`NCD_WARM=0` ปิด) |
 | `NCD_HOSPITAL_NAME` | โรงพยาบาลวังน้ำเขียว | แสดงที่ sidebar และท้ายหน้า |
 | `NCD_DATA_AUDITED` | (ว่าง) | `1` = ซ่อนแถบเตือน "ยังไม่ได้ตรวจ" |
+| `NCD_PUBLIC_MIN_CELL` | `5` | คนนอก รพ. เห็นจำนวนเสียชีวิต (CKD/CVD จาก HOSxP) 1–4 เป็น “<5” · `0` = ปิด |
+| `NCD_ALLOWED_HOSTS` | (ว่าง) | ชื่อโดเมนที่เปิดหน้ารายชื่อ/`/check` ได้ เช่น `lan.wnkhos.go.th` (กัน DNS rebinding) · ว่าง = ไม่ตรวจ |
+| `NCD_TRUSTED_PROXIES` | `127.0.0.1,::1` | reverse proxy ที่เชื่อ `X-Forwarded-Prefix`/`-Proto` ได้ |
 | `NCD_HDC_DISTRICT` / `NCD_HDC_PROVINCE` | `3025` / `30` | รหัสอำเภอ/จังหวัดสำหรับ HDC |
 | `NCD_HDC_TTL_HOURS` / `NCD_HDC_CACHE` | `24` / `data/hdc_cache.json` | HDC ดึงเข้าแคชวันละครั้งแบบเบื้องหลัง (หน้าเว็บอ่านแคชเท่านั้น) · ดึงไม่ได้/ปีงบนั้นยังไม่มีข้อมูล → ใช้ข้อมูลล่าสุดที่เคยดึงไว้ / ไฟล์แคช |
 

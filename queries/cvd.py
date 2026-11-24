@@ -92,7 +92,8 @@ def _kpis(core):
          "sub": "รหัส " + ",".join(config.ICD_AMI)},
         {"label": "Admit ด้วยโรคกลุ่มนี้", "value": ui.fmt_int(core["admits"]), "unit": "ครั้ง", "tone": "orange", "icon": "triangle-alert",
          "sub": "นับ an ไม่ซ้ำ"},
-        {"label": "เสียชีวิตใน รพ.", "value": ui.fmt_int(core["deaths"]), "unit": "ราย", "tone": "blue", "icon": "users",
+        {"label": "เสียชีวิตใน รพ.", "value": ui.fmt_int(core["deaths"]), "privacy_n": core["deaths"],
+         "unit": "ราย", "tone": "blue", "icon": "users",
          "sub": "จำหน่ายสถานะตาย (ipt.dchstts)"}]
 
 
